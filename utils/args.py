@@ -14,7 +14,7 @@ def get_args():
 	parser = argparse.ArgumentParser(description='PyTorch Flows for sre')
 
 	parser.add_argument(
-		'--batch-size',
+		'--batch_size',
 		type=int,
 		default=10000,
 		help='input batch size for training (default: 10000)')
@@ -37,13 +37,13 @@ def get_args():
 		'--flow', default='maf', help='flow to use: maf | realnvp | glow')
 
 	parser.add_argument(
-		'--no-cuda',
+		'--no_cuda',
 		action='store_true',
 		default=False,
 		help='disables CUDA training')
 
 	parser.add_argument(
-		'--num-blocks',
+		'--num_blocks',
 		type=int,
 		default=10,
 		help='number of invertible blocks (default: 10)')
@@ -68,12 +68,12 @@ def get_args():
 		help='how many epochs to wait before saving models')
 
 	parser.add_argument(
-		'--chkpt',
-		default='chkpt',
+		'--ckpt_dir',
+		default='ckpt',
 		help='dir to save check points')
 
 	parser.add_argument(
-		'--kaldi-dir',
+		'--kaldi_dir',
 		default='kaldi',
 		help='dir to save feats in Kaldi format')
 
