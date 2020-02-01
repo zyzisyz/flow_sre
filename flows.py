@@ -14,7 +14,7 @@ pi = torch.from_numpy(np.array(np.pi))
 def get_mask(in_features, out_features, in_flow_features, mask_type=None):
     """
     mask_type: input | None | output
-    
+
     See Figure 1 for a better illustration:
     https://arxiv.org/pdf/1502.03509.pdf
     """
@@ -83,35 +83,35 @@ class MADESplit(nn.Module):
 
         act_func = activations[s_act]
         self.s_joiner = nn.MaskedLinear(num_inputs, num_hidden, input_mask,
-                                      num_cond_inputs)
+                                        num_cond_inputs)
 
         self.s_trunk = nn.Sequential(act_func(),
-                                   nn.MaskedLinear(num_hidden, num_hidden,
-                                                   hidden_mask), act_func(),
-                                   nn.MaskedLinear(num_hidden, num_inputs,
-                                                   output_mask))
+                                     nn.MaskedLinear(num_hidden, num_hidden,
+                                                     hidden_mask), act_func(),
+                                     nn.MaskedLinear(num_hidden, num_inputs,
+                                                     output_mask))
 
         act_func = activations[t_act]
         self.t_joiner = nn.MaskedLinear(num_inputs, num_hidden, input_mask,
-                                      num_cond_inputs)
+                                        num_cond_inputs)
 
         self.t_trunk = nn.Sequential(act_func(),
-                                   nn.MaskedLinear(num_hidden, num_hidden,
-                                                   hidden_mask), act_func(),
-                                   nn.MaskedLinear(num_hidden, num_inputs,
-                                                   output_mask))
-        
+                                     nn.MaskedLinear(num_hidden, num_hidden,
+                                                     hidden_mask), act_func(),
+                                     nn.MaskedLinear(num_hidden, num_inputs,
+                                                     output_mask))
+
     def forward(self, inputs, cond_inputs=None, mode='direct'):
         if mode == 'direct':
             h = self.s_joiner(inputs, cond_inputs)
             m = self.s_trunk(h)
-            
+
             h = self.t_joiner(inputs, cond_inputs)
             a = self.t_trunk(h)
 
             if self.pre_exp_tanh:
                 a = torch.tanh(a)
-            
+
             u = (inputs - m) * torch.exp(-a)
             return u, -a.sum(-1, keepdim=True)
 
@@ -130,6 +130,7 @@ class MADESplit(nn.Module):
                 x[:, i_col] = inputs[:, i_col] * torch.exp(
                     a[:, i_col]) + m[:, i_col]
             return x, -a.sum(-1, keepdim=True)
+
 
 class MADE(nn.Module):
     """ An implementation of MADE
@@ -426,7 +427,7 @@ class CouplingLayer(nn.Module):
             total_inputs = num_inputs + num_cond_inputs
         else:
             total_inputs = num_inputs
-            
+
         self.scale_net = nn.Sequential(
             nn.Linear(total_inputs, num_hidden), s_act_func(),
             nn.Linear(num_hidden, num_hidden), s_act_func(),
@@ -443,11 +444,11 @@ class CouplingLayer(nn.Module):
 
     def forward(self, inputs, cond_inputs=None, mode='direct'):
         mask = self.mask
-        
+
         masked_inputs = inputs * mask
         if cond_inputs is not None:
             masked_inputs = torch.cat([masked_inputs, cond_inputs], -1)
-        
+
         if mode == 'direct':
             log_s = self.scale_net(masked_inputs) * (1 - mask)
             t = self.translate_net(masked_inputs) * (1 - mask)
@@ -465,7 +466,7 @@ class FlowSequential(nn.Sequential):
     In addition to a forward pass it implements a backward pass and
     computes log jacobians.
     """
-    
+
     def forward(self, inputs, cond_inputs=None, mode='direct', logdets=None):
         """ Performs a forward or backward pass for flow modules.
         Args:
@@ -488,4 +489,3 @@ class FlowSequential(nn.Sequential):
                 logdets += logdet
 
         return inputs, logdets
-

@@ -3,7 +3,7 @@
 
 # *************************************************************************
 #	> File Name: tsv_data_prepare.py
-#	> Author: Yang Zhang 
+#	> Author: Yang Zhang
 #	> Mail: zyziszy@foxmail.com
 #	> Created Time: Tue 21 Jan 2020 04:12:58 PM CST
 # ************************************************************************/
@@ -11,7 +11,6 @@
 import os
 import numpy as np
 import random
-
 
 
 def save_label_tsv(path, x):
@@ -86,7 +85,7 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
 
     print("start to sample...")
     sample_index = []
-    while(len(sample_index)<sample_class):
+    while(len(sample_index) < sample_class):
         idx = np.random.randint(0, len(np.unique(pre_label))-1)
         if idx not in sample_index:
             sample_index.append(idx)
@@ -105,15 +104,14 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
         counter = 0
         print("sample idx", idx)
         for i in range(len(_label)):
-            if(idx==_label[i]):
-                if(counter<sample_num):
-                    counter+=1
+            if(idx == _label[i]):
+                if(counter < sample_num):
+                    counter += 1
                     sample_label.append(idx)
                     sample_pre_data.append(pre_data[idx])
                 else:
                     break
 
-    
     x = np.array(sample_data)
 
     y = []
@@ -123,7 +121,7 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
         if it not in table:
             table[it] = counter
             y.append(counter)
-            counter+=1
+            counter += 1
         else:
             idx = table[it]
             y.append(idx)
@@ -131,19 +129,20 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
     y = np.array(y)
 
     write_tsv_embeddings(prefix=prefix, feats=x, labels=y)
-    
-   
+
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description='a apple a day, keep doctor away')
+    parser = argparse.ArgumentParser(
+        description='a apple a day, keep doctor away')
 
-    parser.add_argument('--npz_path', type=str, default="./data/feats.npz", help='load the npz data')
-    parser.add_argument('--class_num',type=int, default=30,help='class num / spker num')
-    parser.add_argument('--sample_num',type=int, default=300,help='sample num of each spker')
+    parser.add_argument('--npz_path', type=str,
+                        default="./data/feats.npz", help='load the npz data')
+    parser.add_argument('--class_num', type=int, default=30,
+                        help='class num / spker num')
+    parser.add_argument('--sample_num', type=int, default=300,
+                        help='sample num of each spker')
     args = parser.parse_args()
 
     # sample, data preparetion and make tsv file
     sample(args.npz_path, args.class_num, args.sample_num)
-
-

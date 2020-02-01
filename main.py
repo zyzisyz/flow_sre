@@ -3,14 +3,14 @@
 
 # *************************************************************************
 #	> File Name: main.py
-#	> Author: Yang Zhang 
+#	> Author: Yang Zhang
 #	> Mail: zyziszy@foxmail.com
 #	> Created Time: Mon 20 Jan 2020 10:42:06 PM CST
 # ************************************************************************/
 
 
-from utils import *
-from trainer import *
+from utils import get_args
+from trainer import trainer
 
 
 if __name__ == "__main__":
@@ -20,4 +20,3 @@ if __name__ == "__main__":
         flow_trainer.train()
     else:
         flow_trainer.generate_z()
-	

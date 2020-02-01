@@ -3,12 +3,13 @@
 
 # *************************************************************************
 #	> File Name: mat_cat.py
-#	> Author: Yang Zhang 
+#	> Author: Yang Zhang
 #	> Mail: zyziszy@foxmail.com
 #	> Created Time: Sat 01 Feb 2020 01:45:30 PM CST
 # ************************************************************************/
 
 import numpy as np
+
 
 def class_mean(data, label):
     "u_j and var_j"
@@ -19,14 +20,14 @@ def class_mean(data, label):
     contain = []
     for i in range(len(data_class)):
         contain.append([])
-    
+
     for i in range(len(label)):
         class_index = label[i]
         contain[class_index].append(data[i])
-    
+
     class_dataset = []
     for it in contain:
-       class_dataset.append(np.array(it)) 
+        class_dataset.append(np.array(it))
 
     class_mean = np.zeros((len(class_dataset), np.shape(data)[1]))
 
@@ -37,7 +38,6 @@ def class_mean(data, label):
     return class_mean
 
 
- 
 def all_mean(data, label):
     '''compute the all mean and var'''
     all_mean = np.ones((len(np.unique(label)), np.shape(data)[1]), dtype=float)
@@ -47,15 +47,14 @@ def all_mean(data, label):
     return all_mean
 
 
-
 if __name__ == "__main__":
 
     import torch
     data = [
-            [1, 1, 1],
-            [1, 1, 1],
-            [0, 0, 0]
-            ]
+        [1, 1, 1],
+        [1, 1, 1],
+        [0, 0, 0]
+    ]
     label = [1, 0, 1]
 
     data = np.array(data)
@@ -75,4 +74,3 @@ if __name__ == "__main__":
     class_mean = torch.cat((class_mean, all_mean), 1)
 
     print(class_mean)
-

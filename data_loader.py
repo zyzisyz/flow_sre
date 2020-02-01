@@ -3,7 +3,7 @@
 
 # *************************************************************************
 #	> File Name: data_loader.py
-#	> Author: Yang Zhang 
+#	> Author: Yang Zhang
 #	> Mail: zyziszy@foxmail.com
 #	> Created Time: Mon 20 Jan 2020 06:18:35 PM CST
 # ************************************************************************/
@@ -14,14 +14,14 @@ import torch.utils.data as data
 import os
 import numpy as np
 import copy
-
+import random
 
 
 class feats_data_loader(data.Dataset):
     def __init__(self, npz_path="data/feats.npz", dataset_name="vox"):
         if(os.path.exists(npz_path)):
             print("hi")
-        self.dataset_name=dataset_name
+        self.dataset_name = dataset_name
 
         _data = np.load(npz_path, allow_pickle=True)['feats']
         _label = np.load(npz_path, allow_pickle=True)['spkers']
@@ -35,7 +35,7 @@ class feats_data_loader(data.Dataset):
         # class counter: the number of each class
         self.class_counter = np.zeros(len(self.data_class), dtype=int)
         for i in self._label:
-            self.class_counter[i]+=1
+            self.class_counter[i] += 1
 
         print("dataset: {}".format(dataset_name))
         print("feats shape: ", np.shape(_data))
@@ -66,8 +66,8 @@ class feats_data_loader(data.Dataset):
 
     def sample(self):
         size = len(self.label)
-        idx = np.random.randint(0, len(np.unique(_label))-1)
-        return self.data[idx], label[idx]
+        idx = np.random.randint(0, size-1)
+        return self.data[idx], self.label[idx]
 
     def shuffle(self):
         '''random shuffle data and lable'''
@@ -75,7 +75,7 @@ class feats_data_loader(data.Dataset):
         random.shuffle(index)
         data = self._data[index]
         label = self._label[index]
-        return data, lable
+        return data, label
 
 
 def get_class_mean(data, label):
@@ -87,14 +87,14 @@ def get_class_mean(data, label):
     contain = []
     for i in range(len(data_class)):
         contain.append([])
-    
+
     for i in range(len(label)):
         class_index = label[i]
         contain[class_index].append(data[i])
-    
+
     class_dataset = []
     for it in contain:
-       class_dataset.append(np.array(it)) 
+        class_dataset.append(np.array(it))
 
     class_mean = np.zeros((len(class_dataset), np.shape(data)[1]))
 
@@ -105,7 +105,6 @@ def get_class_mean(data, label):
     return class_mean
 
 
- 
 def get_all_mean(data, label):
     '''compute the all mean and var'''
     all_mean = np.ones((len(np.unique(label)), np.shape(data)[1]), dtype=float)
@@ -115,10 +114,9 @@ def get_all_mean(data, label):
     return all_mean
 
 
-
 if __name__ == "__main__":
     # test
-    train_data = feats_data_loader(npz_path="./data/feats.npz", dataset_name="vox")
-    print(np.shape(class_mean(train_data.data, train_data.label)))
-    print(np.shape(all_mean(train_data.data)))
-   
+    train_data = feats_data_loader(
+        npz_path="./data/feats.npz", dataset_name="vox")
+    print(np.shape(get_class_mean(train_data.data, train_data.label)))
+    print(np.shape(get_all_mean(train_data.data)))
