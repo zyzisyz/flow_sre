@@ -32,3 +32,6 @@ def get_skew_and_kurt(data):
     # print('skew:', skew_mean)  # test
     # print('kurt:', kurt_mean)  # test
     return skew_mean, kurt_mean
+
+
+

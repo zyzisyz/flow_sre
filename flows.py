@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+pi = torch.from_numpy(np.array(np.pi))
+
 
 def get_mask(in_features, out_features, in_flow_features, mask_type=None):
     """
@@ -463,7 +465,7 @@ class FlowSequential(nn.Sequential):
     In addition to a forward pass it implements a backward pass and
     computes log jacobians.
     """
-
+    
     def forward(self, inputs, cond_inputs=None, mode='direct', logdets=None):
         """ Performs a forward or backward pass for flow modules.
         Args:
@@ -487,18 +489,3 @@ class FlowSequential(nn.Sequential):
 
         return inputs, logdets
 
-    def log_probs(self, inputs, cond_inputs = None):
-        u, log_jacob = self(inputs, cond_inputs)
-        log_probs = (-0.5 * u.pow(2) - 0.5 * math.log(2 * math.pi)).sum(
-            -1, keepdim=True)
-        return (log_probs + log_jacob).sum(-1, keepdim=True)
-
-    def sample(self, num_samples=None, noise=None, cond_inputs=None):
-        if noise is None:
-            noise = torch.Tensor(num_samples, self.num_inputs).normal_()
-        device = next(self.parameters()).device
-        noise = noise.to(device)
-        if cond_inputs is not None:
-            cond_inputs = cond_inputs.to(device)
-        samples = self.forward(noise, cond_inputs, mode='inverse')[0]
-        return samples

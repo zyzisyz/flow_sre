@@ -9,31 +9,15 @@
 # ************************************************************************/
 
 
-import math
-import os
-import sys
-import time
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import torch.utils.data
-from tqdm import tqdm
-from tensorboardX import SummaryWriter
-
-
 from utils import *
-from init_model import *
 from trainer import *
-from infer import *
-
 
 
 if __name__ == "__main__":
-	args = get_args()
-
-	flow_trainer = trainer(args)
-	flow_trainer.train()
-	flow_trainer.save_checkpoint()
+    args = get_args()
+    flow_trainer = trainer(args)
+    if not args.eval:
+        flow_trainer.train()
+    else:
+        flow_trainer.generate_z()
 	
