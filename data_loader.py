@@ -19,8 +19,9 @@ import random
 
 class feats_data_loader(data.Dataset):
     def __init__(self, npz_path="data/feats.npz", dataset_name="vox"):
-        if(os.path.exists(npz_path)):
-            print("hi")
+        assert os.path.exists(npz_path) == True
+        print("hi")
+
         self.dataset_name = dataset_name
 
         _data = np.load(npz_path, allow_pickle=True)['feats']
