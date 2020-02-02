@@ -37,7 +37,7 @@ def save_tensor_tsv(path, feats):
         print("successfully saved in {}".format(path))
 
 
-def write_tsv_embeddings(prefix, feats, labels=None):
+def write_tsv_embeddings(prefix, feats, labels=None, dirs=None):
     '''
      Write a tensor (or meta) to a tsv file for the `Embedding Project` tool
     :param prefix: output file prefix
@@ -45,19 +45,24 @@ def write_tsv_embeddings(prefix, feats, labels=None):
     :param labels: meta data
     :return: None
     '''
+    if dirs!=None:
+        if os.path.exists(dirs) == False:
+            os.makedirs(dirs)
+        prefix = dirs + '/' + prefix
+
     feat_path = prefix + '_data.tsv'
     save_tensor_tsv(feat_path, feats)
     if labels is None:
         return
     dims = len(labels.shape)
-    label_path = prefix + '_meta.tsv'
+    label_path = dirs + '/' 'label.tsv'
     if dims == 1:
         save_label_tsv(label_path, labels)
     else:
         save_tensor_tsv(label_path, labels)
 
 
-def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
+def sample(pre_npz, infered_npz, sample_class=50, sample_num=500, dirs=None):
     '''
     :param npz_path: npz file path which stores the datesets
     :param prefix: out_put tsv file name prefix
@@ -71,17 +76,18 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
     pre_label = np.load(pre_npz)['spkers']
 
     infer_data = np.load(infered_npz)['feats']
-    infer_label = np.load(infer_npz)['spkers']
+    infer_label = np.load(infered_npz)['spkers']
 
-    assert pre_label == infer_label
+    assert pre_label.any() == infer_label.any() # check
 
     '''random shuffle data and lable'''
     index = [i for i in range(len(pre_label))]
     random.shuffle(index)
+
     pre_data = pre_data[index]
-    pre_label = pre_label[index]
     infer_data = infer_data[index]
-    infer_label = infer_label[index]
+
+    pre_label = pre_label[index]
 
     print("start to sample...")
     sample_index = []
@@ -95,24 +101,26 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
 
     sample_label = []
 
-    print("total label: ", len(_label))
-    print("unique label: ", len(np.unique(_label)))
+    print("total label: ", len(pre_label))
+    print("unique label: ", len(np.unique(pre_label)))
     print("sample data...")
     print("sample class: {}, sample num: {}".format(sample_class, sample_num))
 
     for idx in sample_index:
         counter = 0
         print("sample idx", idx)
-        for i in range(len(_label)):
-            if(idx == _label[i]):
+        for i in range(len(pre_label)):
+            if(idx == pre_label[i]):
                 if(counter < sample_num):
                     counter += 1
                     sample_label.append(idx)
                     sample_pre_data.append(pre_data[idx])
+                    sample_infer_data.append(infer_data[idx])
                 else:
                     break
 
-    x = np.array(sample_data)
+    x1 = np.array(sample_pre_data)
+    x2 = np.array(sample_infer_data)
 
     y = []
     table = {}
@@ -128,7 +136,8 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500):
 
     y = np.array(y)
 
-    write_tsv_embeddings(prefix=prefix, feats=x, labels=y)
+    write_tsv_embeddings(prefix="x", feats=x1, labels=y, dirs=dirs)
+    write_tsv_embeddings(prefix="z", feats=x2, labels=y, dirs=dirs)
 
 
 if __name__ == "__main__":
@@ -136,13 +145,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='a apple a day, keep doctor away')
 
-    parser.add_argument('--npz_path', type=str,
+    parser.add_argument('--pre_npz', type=str,
+                        default="./data/feats.npz", help='load the npz data')
+    parser.add_argument('--infered_npz', type=str,
                         default="./data/feats.npz", help='load the npz data')
     parser.add_argument('--class_num', type=int, default=30,
                         help='class num / spker num')
     parser.add_argument('--sample_num', type=int, default=300,
                         help='sample num of each spker')
+    parser.add_argument('--tsv_dir', type=str,
+                        default="./tsv", help='tsv dir')
+    
     args = parser.parse_args()
 
     # sample, data preparetion and make tsv file
-    sample(args.npz_path, args.class_num, args.sample_num)
+    sample(args.pre_npz, args.infered_npz, args.class_num, args.sample_num, args.tsv_dir)

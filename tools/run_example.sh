@@ -18,3 +18,11 @@ python -u tsv_data_prepare.py \
 	--npz_path ../test.npz \
     --class_num 30 \
     --sample_num 300 
+
+# sample same index from x and z, make tsv
+python -u comp_tsv_data_prepare.py \
+	--pre_npz ../data/feats.npz \
+	--infered_npz ../test.npz \
+	--class_num 30 \
+    --sample_num 300 
+

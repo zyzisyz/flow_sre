@@ -26,12 +26,19 @@ def get_args():
             help='number of epochs to train (default: 100)')
 
     parser.add_argument(
-            '--lr', type=float, default=0.001, help='learning rate (default: 0.001)')
+            '--infer_epoch',
+            type=int,
+            default=-1,
+            help='index of ckpt epoch to infer (default: 100)')
 
     parser.add_argument(
-            '--dataset',
-            default='VOXCELEB1',
-            help='VOXCELEB1 | SITW_DEV_ENROLL | SITW_DEV_TEST | SITW_EVAL_ENROLL | SITW_EVAL_TEST')
+            '--num_hidden',
+            type=int,
+            default=256,
+            help='number of hidden of model')
+
+    parser.add_argument(
+            '--lr', type=float, default=0.001, help='learning rate (default: 0.001)')
 
     parser.add_argument(
             '--flow', default='maf', help='flow to use: maf | realnvp | glow')
@@ -62,6 +69,26 @@ def get_args():
             help='log status')
 
     parser.add_argument(
+            '--train_data_npz',
+            default='./data/feats.npz',
+            help='train data npz path')
+
+    parser.add_argument(
+            '--dataset_name',
+            default='voxceleb1',
+            help='dataset name')
+
+    parser.add_argument(
+            '--infer_data_store_path',
+            default='./infer.npz',
+            help='infer data npz path')
+
+    parser.add_argument(
+            '--test_data_npz',
+            default='./data/feats.npz',
+            help='infer data npz path')
+
+    parser.add_argument(
             '--interval',
             type=int,
             default=10,
@@ -71,11 +98,6 @@ def get_args():
             '--ckpt_dir',
             default='ckpt',
             help='dir to save check points')
-
-    parser.add_argument(
-            '--kaldi_dir',
-            default='kaldi',
-            help='dir to save feats in Kaldi format')
 
     parser.add_argument(
             '--eval',

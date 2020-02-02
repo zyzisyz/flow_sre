@@ -45,7 +45,8 @@ class trainer(object):
 
         # init dataloader
         self.dataset = feats_data_loader(
-            npz_path="./data/feats.npz", dataset_name="vox")
+            npz_path=args.train_data_npz, dataset_name=args.dataset_name)
+
         self.train_loader = torch.utils.data.DataLoader(
             self.dataset, batch_size=self.args.batch_size, shuffle=True, **kwargs)
 
@@ -170,22 +171,27 @@ class trainer(object):
 
     # generate z
 
-    def generate_z(self, ckpt_path=None):
+    def generate_z(self):
+        args = self.args
 
         c_dim = self.args.c_dim
 
         # init model
-        if ckpt_path == None:
+        if args.infer_epoch == -1:
             self.reload_checkpoint()
         else:
-            pass
+            ckpt_path = '{}/ckpt_epoch{}.pt'.format(args.ckpt_dir, args.infer_epoch)
+            assert os.path.exists(ckpt_path) == True
+            checkpoint_dict = torch.load(ckpt_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint_dict['model'])
+            print("successfully reload {} to infer".format(ckpt_path))
 
         self.model.to(self.device)
         self.model.eval()
 
         # init data x
         dataset = feats_data_loader(
-            npz_path="./data/feats.npz", dataset_name="vox")
+            npz_path=self.args.test_data_npz, dataset_name=self.args.dataset_name)
         labels = dataset.label
 
         kwargs = {'num_workers': 6, 'pin_memory': True}
@@ -208,8 +214,9 @@ class trainer(object):
 
         feats = feats[:, :c_dim]
         print(np.shape(feats))
-        np.savez("test.npz", feats=feats, spkers=labels)
-        print("sucessfully saved in {}".format("test.npz"))
+
+        np.savez(args.infer_data_store_path, feats=feats, spkers=labels)
+        print("sucessfully saved in {}".format(args.infer_data_store_path))
 
     def reload_checkpoint(self):
         '''check if checkpoint file exists and reload the checkpoint'''
@@ -267,7 +274,4 @@ class trainer(object):
 
 
 if __name__ == "__main__":
-    args = get_args()
-    flow_trainer = trainer(args)
-    # flow_trainer.train()
-    flow_trainer.generate_z()
+    pass

@@ -19,7 +19,7 @@ import torch.nn.functional as F
 
 def init_model(args, num_inputs=72):
     # network structure
-    num_hidden = {'VOXCELEB1': 256}[args.dataset]
+    num_hidden = args.num_hidden
     num_cond_inputs = None
 
     act = 'relu'
