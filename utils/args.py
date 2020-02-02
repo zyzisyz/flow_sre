@@ -89,9 +89,9 @@ def get_args():
             help='infer data npz path')
 
     parser.add_argument(
-            '--interval',
+            '--ckpt_save_interval',
             type=int,
-            default=10,
+            default=1,
             help='how many epochs to wait before saving models')
 
     parser.add_argument(

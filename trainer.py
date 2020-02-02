@@ -164,10 +164,13 @@ class trainer(object):
                     100.*batch_idx / len(self.train_loader),
                     cur_loss))
 
-            print('====> Epoch: {} Average loss: {:.4f}'.format(
-                self.epoch_idx, train_loss))
+            # print('====> Epoch: {} Average loss: {:.4f}'.format(
+            #    self.epoch_idx, train_loss)/len(self.label))
 
-            self.save_checkpoint()
+            if self.epoch_idx % args.ckpt_save_interval == 0:
+                self.save_checkpoint()
+
+        self.save_checkpoint()
 
     # generate z
 
