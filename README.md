@@ -1,16 +1,14 @@
 # flow_sre
 
-## Dependency and work env
-
-0. find a computer and install python3
+## Dependency and work ENV
 
 1. install `pytorch-gpu` 
 
 2. `pip3 install -r requrements.txt`
 
-## data preparation
+## Data Preparation
 
-`tools/ark2npz.py` convert feats.ark to feats.npz (`utt2spk` file is also required)
+`tools/ark2npz.py` convert kaldi feats.ark to numpy feats.npz (`utt2spk` file is also required)
 
 ```bash
 # convert ark to npz
