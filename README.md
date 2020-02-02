@@ -23,7 +23,7 @@ python -u tools/ark2npz.py \
 
 When we finish data preparation, we can get a `feats.npz` file, which contain audio Mel-features and labels(speakers)
 
-What's more, `ark2npz.py` also convert the string label(speaker) to int datatype label, and the label of the first speaker is 0.
+What's more, `ark2npz.py` also convert the string label to int label, and the label of the first speaker is 0.
 
 ```
 .
