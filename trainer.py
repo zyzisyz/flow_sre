@@ -15,6 +15,8 @@ from data_loader import *
 import torch.optim as optim
 from utils import *
 import torch.nn.functional as F
+import kaldi_io
+from tqdm import tqdm
 
 pi = torch.from_numpy(np.array(np.pi))
 
@@ -140,7 +142,7 @@ class trainer(object):
                 # convert data to z space
                 z, logdet = self.model(data)
 
-                # compute hda Guassion log-likehood
+                # compute hda Gaussion log-likehood
                 mean_j = torch.index_select(self.class_mean, 0, label)
 
                 log_det_sigma = torch.log(
@@ -172,9 +174,7 @@ class trainer(object):
 
         self.save_checkpoint()
 
-    # generate z
-
-    def generate_z(self):
+    def generate_z_kaldi(self):
         args = self.args
 
         c_dim = self.args.c_dim
@@ -195,7 +195,55 @@ class trainer(object):
         # init data x
         dataset = feats_data_loader(
             npz_path=self.args.test_data_npz, dataset_name=self.args.dataset_name)
-        labels = dataset.label
+        utt_data = dataset.get_utt_data()
+
+        kaldi_dir = args.kaldi_dir + os.sep + str(args.infer_epoch)
+        if not os.path.exists(kaldi_dir):
+            os.makedirs(kaldi_dir)
+        ark_path = args.kaldi_dir + os.sep + str(args.infer_epoch) + os.sep + 'feats.ark'
+
+        test = 0
+        pbar = tqdm(total=len(utt_data))
+        with open(ark_path,'wb') as f:
+            for utt, data in utt_data.items():
+                test+=len(data)
+                data = np.array(data)
+                data = torch.from_numpy(data)
+                data = data.to(self.device)
+                data, _ = self.model(data)
+                data = data.cpu().detach().numpy()
+                data = data[:, :c_dim]
+                kaldi_io.write_mat(f, data, utt)
+                pbar.update(1)
+                pbar.set_description('generate utter {} of frames {}'.format(
+                    utt, data.shape[0]))
+        pbar.close()
+
+        if test == len(dataset.data):
+            print("right")
+
+
+    def generate_z_np(self):
+        args = self.args
+
+        c_dim = self.args.c_dim
+
+        # init model
+        if args.infer_epoch == -1:
+            self.reload_checkpoint()
+        else:
+            ckpt_path = '{}/ckpt_epoch{}.pt'.format(args.ckpt_dir, args.infer_epoch)
+            assert os.path.exists(ckpt_path) == True
+            checkpoint_dict = torch.load(ckpt_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint_dict['model'])
+            print("successfully reload {} to infer".format(ckpt_path))
+
+        self.model.to(self.device)
+        self.model.eval()
+
+        # init data x
+        dataset = feats_data_loader(
+            npz_path=self.args.test_data_npz, dataset_name=self.args.dataset_name)
 
         kwargs = {'num_workers': 6, 'pin_memory': True}
         test_loader = torch.utils.data.DataLoader(
@@ -204,7 +252,6 @@ class trainer(object):
         total = len(dataset.label)
         for batch_idx, (data, label) in enumerate(test_loader):  # batchs
             data = data.to(self.device)
-            self.optimizer.zero_grad()
             z, _ = self.model(data)
             z = z.cpu().detach().numpy()
             if batch_idx == 0:
@@ -218,7 +265,7 @@ class trainer(object):
         feats = feats[:, :c_dim]
         print(np.shape(feats))
 
-        np.savez(args.infer_data_store_path, feats=feats, spkers=labels)
+        np.savez(args.infer_data_store_path, feats=feats, spker_label=dataset.spker_label, utt_label=dataset.utt_label)
         print("sucessfully saved in {}".format(args.infer_data_store_path))
 
     def reload_checkpoint(self):

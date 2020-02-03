@@ -50,6 +50,12 @@ def get_args():
             help='disables CUDA training')
 
     parser.add_argument(
+            '--np',
+            action='store_true',
+            default=False,
+            help='infer kaldi or numpy data')
+
+    parser.add_argument(
             '--num_blocks',
             type=int,
             default=10,
@@ -67,6 +73,11 @@ def get_args():
             '--log',
             default='log',
             help='log status')
+
+    parser.add_argument(
+            '--kaldi_dir',
+            default='infer_kaldi_data',
+            help='kaldi ark data')
 
     parser.add_argument(
             '--train_data_npz',

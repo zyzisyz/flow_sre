@@ -8,7 +8,7 @@
 
 ## Data Preparation
 
-`tools/ark2npz.py` convert kaldi feats.ark to numpy feats.npz (`utt2spk` file is also required)
+`tools/ark2npz.py` convert kaldi `feats.ark` to numpy `feats.npz` (`utt2spk` file is also required)
 
 ```bash
 # convert ark to npz
@@ -50,7 +50,7 @@ z, logdet = self.model(data)
 
 mean_j = torch.index_select(self.class_mean, 0, label)
 
-# compute hda Guassion log-likehood
+# compute hda Gaussion log-likehood
 log_det_sigma = torch.log(
 		var_global+1e-15).sum(-1, keepdim=True).to(self.device)
 

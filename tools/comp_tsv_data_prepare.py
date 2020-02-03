@@ -73,10 +73,10 @@ def sample(pre_npz, infered_npz, sample_class=50, sample_num=500, dirs=None):
     print("loading data...")
 
     pre_data = np.load(pre_npz)['feats']
-    pre_label = np.load(pre_npz)['spkers']
+    pre_label = np.load(pre_npz)['spker_label']
 
     infer_data = np.load(infered_npz)['feats']
-    infer_label = np.load(infered_npz)['spkers']
+    infer_label = np.load(infered_npz)['spker_label']
 
     assert pre_label.any() == infer_label.any() # check
 

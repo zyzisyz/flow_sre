@@ -18,70 +18,56 @@ import random
 
 
 class feats_data_loader(data.Dataset):
-    def __init__(self, npz_path="data/feats.npz", dataset_name="vox"):
+    def __init__(self, npz_path="data/feats.npz", dataset_name="voxceleb1"):
         assert os.path.exists(npz_path) == True
         print("hi")
 
         self.dataset_name = dataset_name
 
-        _data = np.load(npz_path, allow_pickle=True)['feats']
-        _label = np.load(npz_path, allow_pickle=True)['spkers']
+        feat_data = np.load(npz_path)['feats']
+        spker_label = np.load(npz_path)['spker_label'] # spker label for pytorch train
+        utt_label = np.load(npz_path)['utt_label'] # utt label for kaili test
 
-        self._data = _data
-        self._label = _label
-
-        # class
-        self.data_class = np.unique(_label)
-
-        # class counter: the number of each class
-        self.class_counter = np.zeros(len(self.data_class), dtype=int)
-        for i in self._label:
-            self.class_counter[i] += 1
+        self.feat_data = feat_data
+        self.spker_label = spker_label
+        self.utt_label = utt_label
 
         print("dataset: {}".format(dataset_name))
-        print("feats shape: ", np.shape(_data))
-        print("spker label shape: ", np.shape(_label))
-        print("num of spker: ", np.shape(np.unique(_label)))
+        print("feats shape: ", np.shape(feat_data))
+        print("spker label shape: ", np.shape(spker_label))
+        print("num of spker: ", np.shape(np.unique(spker_label)))
+        print("utt label shape: ", np.shape(utt_label))
+        print("num of utt: ", np.shape(np.unique(utt_label)))
+
+    def get_utt_data(self):
+        '''for kaldi test'''
+        utt_class = np.unique(self.utt_label)
+        utt_data = {}
+        for i in utt_class:
+            utt_data[i] = []
+        for i in range(len(self.data)):
+            key = self.utt_label[i]
+            utt_data[key].append(self.data[i])
+        
+        return utt_data
 
     def __len__(self):
-        return len(self._label)
+        return len(self.spker_label)
 
     def __getitem__(self, index):
-        return self._data[index], self._label[index]
+        return self.feat_data[index], self.spker_label[index]
 
     @property
     def data(self):
-        return self._data
+        return self.feat_data
 
     @property
     def label(self):
-        return self._label
-
-    @property
-    def torch_data(self):
-        return torch.from_numpy(self._data)
-
-    @property
-    def torch_label(self):
-        return torch.from_numpy(self._label)
-
-    def sample(self):
-        size = len(self.label)
-        idx = np.random.randint(0, size-1)
-        return self.data[idx], self.label[idx]
-
-    def shuffle(self):
-        '''random shuffle data and lable'''
-        index = [i for i in range(len(self._label))]
-        random.shuffle(index)
-        data = self._data[index]
-        label = self._label[index]
-        return data, label
+        '''default label is spker_label'''
+        return self.spker_label
 
 
 def get_class_mean(data, label):
-    "u_j and var_j"
-
     assert np.shape(data)[0] == np.shape(label)[0]
     data_class = np.unique(label)
 
@@ -119,5 +105,5 @@ if __name__ == "__main__":
     # test
     train_data = feats_data_loader(
         npz_path="./data/feats.npz", dataset_name="vox")
-    print(np.shape(get_class_mean(train_data.data, train_data.label)))
-    print(np.shape(get_all_mean(train_data.data)))
+    utt_data = train_data.utt_data()
+
