@@ -48,12 +48,15 @@ def ark2npz(ark_path, npz_path, utt2spk):
     counter = 0
     feats = []
     spkers = []
+    utt_label = []
     for mat in mats:
         for i in mat:
             feats.append(i)
             spkers.append(utt2spk[utts[counter]])
+            utt_label.append(utts[counter])
         counter += 1
 
+    
     # convert string-label to num label
     string_lable = spkers
     spkers = np.unique(spkers)
@@ -69,7 +72,7 @@ def ark2npz(ark_path, npz_path, utt2spk):
         num_label.append(table[spk])
 
     print("saving...")
-    np.savez(npz_path, feats=feats, spkers=num_label)
+    np.savez(npz_path, feats=feats, spker_label=num_label, utt_label=utt_label)
     print("sucessfully convert {} to {} ".format(ark_path, npz_path))
     print("ark->npz down")
 
@@ -91,14 +94,18 @@ if __name__ == "__main__":
     # test
     print("\n\ntest...\n")
     feats = np.load(args.dest_file, allow_pickle=True)['feats']
-    spkers = np.load(args.dest_file, allow_pickle=True)['spkers']
+    spker_label = np.load(args.dest_file, allow_pickle=True)['spker_label']
+    utt_label = np.load(args.dest_file, allow_pickle=True)['utt_label']
 
     print("feats shape: ", np.shape(feats))
-    print("spker label shape: ", np.shape(spkers))
-    print("num of spker: ", np.shape(np.unique(spkers)))
+    print("spker label shape: ", np.shape(spker_label))
+    print("num of spker: ", np.shape(np.unique(spker_label)))
 
-    print(spkers[0])
-    print(feats[0])
+    print("utt label shape: ", np.shape(utt_label))
+    print("num of utt: ", np.shape(np.unique(utt_label)))
+
+    print(spker_label[0])
+    print(utt_label[0])
 
 # 	spk = np.unique(spkers)
 # 	for it in spk:

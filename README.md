@@ -40,7 +40,7 @@ What's more, `ark2npz.py` also convert the string label to int label, and the la
 
 `class_mean` and `all_mean` will be updata at the begining of each training epoch.
 
-`var_j` and `var_0` is fixed
+`var_j` and `var_0` are fixed
 
 Loss: Gaussion Log-likehood (HDA, `class_meean` and `all_mean` matrix are recombination ordered by `c_dim`)
 
@@ -84,7 +84,7 @@ python -u main.py \
 	   --eval \
 	   --infer_epoch 1 \
 	   --test_data_npz ./data/feats.npz \
-	   --infer_data_store_path ./infered.npz
+	   --kaldi_dir kaldi_data
 ```
 
 ## tools
