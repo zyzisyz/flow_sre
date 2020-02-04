@@ -105,5 +105,7 @@ if __name__ == "__main__":
     # test
     train_data = feats_data_loader(
         npz_path="./data/feats.npz", dataset_name="vox")
-    utt_data = train_data.utt_data()
+    print(train_data.data[1])
+    print(train_data.label[1])
+    print(train_data.utt_label[1])
 

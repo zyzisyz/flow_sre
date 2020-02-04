@@ -118,7 +118,9 @@ def get_args():
 
     parser.add_argument('--v_c', type=float, default=0.1, help='variance of the class space (default: 0.1)')
     parser.add_argument('--v_0', type=float, default=1.0, help='variance of the result space (default: 2.0)')
-    parser.add_argument('--c_dim', type=int, default=36, help='variance of the result space (default: 2.0)')
+    parser.add_argument('--c_dim', type=int, default=36, help='hda p dim (default: 36)')
+    parser.add_argument('--u_0', type=float, default=1.0, help='mean of the result space (default: 1.0)')
+    parser.add_argument('--u_shift', type=float, default=0.5, help='class_mean shift')
 
     args = parser.parse_args()
 

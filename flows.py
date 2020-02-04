@@ -489,3 +489,21 @@ class FlowSequential(nn.Sequential):
                 logdets += logdet
 
         return inputs, logdets
+
+    def HDA_Gaussion_log_likehood(self, data, mean_j, var_global):
+        device = data.device
+        z, logdet = self(data)
+
+        # compute hda Gaussion log-likehood
+        # NOTE: if you want to change loss function, z must be returned to update class mean
+
+        log_det_sigma = torch.log(
+            var_global+1e-15).sum(-1, keepdim=True).to(device)
+
+        log_probs = -0.5 * ((torch.pow((z-mean_j), 2) / (var_global+1e-15) + torch.log(
+            2 * pi)).sum(-1, keepdim=True) + log_det_sigma).to(device)
+
+        loss = -(log_probs + logdet).mean()
+
+        return loss, z
+

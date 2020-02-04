@@ -38,7 +38,7 @@ class trainer(object):
             self.device = torch.device("cuda:" + args.device)
         else:
             self.device = torch.device("cpu")
-        print("training device: {}".format(self.device))
+        print("torch device: {}".format(self.device))
 
     def train(self):
         args = self.args
@@ -54,67 +54,37 @@ class trainer(object):
 
         self.reload_checkpoint()
         self.model.to(self.device)
+    
+        c_dim = args.c_dim      # hda p dim (default: 36)
+        v_c = args.v_c          # variance of the class space (default: 0.1)
+        v_0 = args.v_0          # variance of the result space (default: 2.0)
+        u_0 = args.u_0          # mean of the result space (default: 1.0)
+        DATA_DIM = np.shape(self.dataset.data)[1]
 
-        c_dim = args.c_dim
-        v_c = args.v_c
-        v_0 = args.v_0
+        # init var_global
+        var_c = torch.ones(c_dim, device=self.device) * v_c
+        var_0 = torch.ones((DATA_DIM-c_dim), device=self.device) * v_0
+        var_global = torch.cat((var_c, var_0), 0).unsqueeze(0)
+        var_global.to(self.device)
+
+        # init all_mean
+        self.all_mean = torch.ones((len(np.unique(self.dataset.label)), DATA_DIM), dtype=float) * u_0
 
         # main to train
         start_epoch = self.epoch_idx
+
+        if start_epoch >= args.epochs:
+            print("training is down!")
+            return
+
         for idx in range(start_epoch, args.epochs):  # epochs
             self.epoch_idx = idx
             train_loss = 0
-
-            # firstly, we udpate class_mean
+            
+            # init class mean from x space
             if idx == 0:
-                print('epoch 0: init mean from original dataset')
-                class_mean = get_class_mean(
-                    self.dataset.data, self.dataset.label)
-                class_mean = torch.from_numpy(class_mean)
-
-                all_mean = get_all_mean(self.dataset.data, self.dataset.label)
-                all_mean = torch.from_numpy(all_mean)
-
-                # split data
-                class_mean = class_mean[:, :c_dim]
-                all_mean = all_mean[:, c_dim:]
-
-                # cat data
-                class_mean = torch.cat((class_mean, all_mean), 1)
-                self.class_mean = class_mean.to(self.device)
-
-            elif self.contain != None:
-                print('epoch {}: update mean from z space'.format(idx))
-                DATA_DIM = np.shape(self.dataset.data)[1]
-
-                class_dataset = []
-                all_mean_1d = np.zeros(DATA_DIM, dtype=float)
-                for it in self.contain:
-                    class_dataset.append(np.array(it))
-                    for i in it:
-                        all_mean_1d += i
-
-                all_mean_1d = all_mean_1d/len(self.dataset.label)
-                all_mean = np.ones((len(class_dataset), DATA_DIM), dtype=float)
-                all_mean = all_mean*all_mean_1d
-
-                class_mean = np.zeros((len(class_dataset), DATA_DIM))
-
-                for i in range(len(class_dataset)):
-                    it = class_dataset[i]
-                    class_mean[i] = it.mean(axis=0)
-
-                class_mean = torch.from_numpy(class_mean)
-                all_mean = torch.from_numpy(all_mean)
-
-                # split data
-                class_mean = class_mean[:, :c_dim]
-                all_mean = all_mean[:, c_dim:]
-
-                # cat data
-                class_mean = torch.cat((class_mean, all_mean), 1)
-                self.class_mean = class_mean.to(self.device)
-
+                self.init_class_mean()
+           
             # init contain
             self.contain = []
             for i in range(self.class_mean.shape[0]):
@@ -122,36 +92,18 @@ class trainer(object):
 
             for batch_idx, (data, label) in enumerate(self.train_loader):  # batchs
 
-                for i in range(len(label)):
-                    self.contain[label[i]].append(data[i].numpy())
-
                 data = data.to(self.device)
                 label = label.to(self.device)
-                self.class_mean.to(self.device)
 
                 self.optimizer.zero_grad()
 
-                # init var_global
-                var_c = torch.ones(
-                    data[:, :c_dim].shape[1], device=data.device) * v_c
-                var_0 = torch.ones(
-                    data[:, c_dim:].shape[1], device=data.device) * v_0
-                var_global = torch.cat((var_c, var_0), 0).unsqueeze(0)
-                var_global.to(self.device)
+                mean_j = torch.index_select(self.class_mean, 0, label).to(self.device)
+                # convert data from x space to z space
 
-                # convert data to z space
-                z, logdet = self.model(data)
-
+                '''NOTE: if you want to change loss function, z must be returned to update class mean'''
                 # compute hda Gaussion log-likehood
-                mean_j = torch.index_select(self.class_mean, 0, label)
-
-                log_det_sigma = torch.log(
-                    var_global+1e-15).sum(-1, keepdim=True).to(self.device)
-                log_probs = -0.5 * ((torch.pow((z-mean_j), 2) / (var_global+1e-15) + torch.log(
-                    2 * pi)).sum(-1, keepdim=True) + log_det_sigma).to(self.device)
-
-                loss = -(log_probs + logdet).mean()
-
+                loss, z = self.model.HDA_Gaussion_log_likehood(data, mean_j, var_global)
+                
                 # loss
                 loss.backward()
 
@@ -160,19 +112,77 @@ class trainer(object):
                 train_loss += cur_loss
                 self.optimizer.step()
 
+                z = z.cpu().detach().numpy()
+                for i in range(len(label)):
+                    self.contain[label[i]].append(z[i])
+
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     self.epoch_idx, batch_idx *
                     len(data), len(self.train_loader.dataset),
                     100.*batch_idx / len(self.train_loader),
                     cur_loss))
 
-            # print('====> Epoch: {} Average loss: {:.4f}'.format(
-            #    self.epoch_idx, train_loss)/len(self.label))
+            print('====> Epoch: {} Average loss: {:.4f}'.format(
+                self.epoch_idx, train_loss/len(self.dataset.label)*self.args.batch_size))
+            
+            # updata class mean afer epoch training
+            self.update_class_mean()
 
             if self.epoch_idx % args.ckpt_save_interval == 0:
                 self.save_checkpoint()
 
         self.save_checkpoint()
+        print("training is down")
+
+
+    def init_class_mean(self):
+        args = self.args
+
+        # init class mean from x space at the start of epoch 0
+        print('epoch 0: init class_mean from x space')
+        class_mean = get_class_mean(self.dataset.data, self.dataset.label)
+        class_mean = torch.from_numpy(class_mean)
+
+        # split data
+        class_mean = class_mean[:, :args.c_dim]
+        all_mean = self.all_mean[:, args.c_dim:]
+
+        # cat data
+        class_mean = torch.cat((class_mean, all_mean), 1)
+
+        # epoch 0 no u_shift 
+        self.class_mean = class_mean.to(self.device)
+
+
+    def update_class_mean(self):
+        args = self.args
+        DATA_DIM = len(self.dataset.data[0])
+        # updata class mean from z space at the start of epoch x > 0 (contain)
+        if self.contain != None:
+            print('updata class_mean from z space and args.u_shift is {}'.format(args.u_shift))
+            class_dataset = []
+            for it in self.contain:
+                class_dataset.append(np.array(it))
+
+            class_mean = np.zeros((len(class_dataset), DATA_DIM))
+            for i in range(len(class_dataset)):
+                it = class_dataset[i]
+                class_mean[i] = it.mean(axis=0)
+                
+            class_mean = torch.from_numpy(class_mean)
+
+            # split data
+            class_mean = class_mean[:, :args.c_dim]
+            all_mean = self.all_mean[:, args.c_dim:]
+
+            # cat data
+            class_mean = torch.cat((class_mean, all_mean), 1)
+
+            # shift from last epoch class_mean
+            self.class_mean = class_mean.to(self.device)*args.u_shift + self.class_mean*(1.0-args.u_shift)
+        else:
+            raise Exception("contain error")
+            
 
     def generate_z_kaldi(self):
         args = self.args
@@ -187,7 +197,7 @@ class trainer(object):
             assert os.path.exists(ckpt_path) == True
             checkpoint_dict = torch.load(ckpt_path, map_location=self.device)
             self.model.load_state_dict(checkpoint_dict['model'])
-            print("successfully reload {} to infer".format(ckpt_path))
+            print("successfully reload {} [model] to infer".format(ckpt_path))
 
         self.model.to(self.device)
         self.model.eval()
@@ -202,25 +212,23 @@ class trainer(object):
             os.makedirs(kaldi_dir)
         ark_path = args.kaldi_dir + os.sep + str(args.infer_epoch) + os.sep + 'feats.ark'
 
-        test = 0
         pbar = tqdm(total=len(utt_data))
         with open(ark_path,'wb') as f:
             for utt, data in utt_data.items():
-                test+=len(data)
                 data = np.array(data)
                 data = torch.from_numpy(data)
                 data = data.to(self.device)
                 data, _ = self.model(data)
                 data = data.cpu().detach().numpy()
+                # split data
                 data = data[:, :c_dim]
                 kaldi_io.write_mat(f, data, utt)
                 pbar.update(1)
                 pbar.set_description('generate utter {} of frames {}'.format(
                     utt, data.shape[0]))
         pbar.close()
+        print("successfully save kaldi ark in {}".format(ark_path))
 
-        if test == len(dataset.data):
-            print("right")
 
 
     def generate_z_np(self):
@@ -236,7 +244,7 @@ class trainer(object):
             assert os.path.exists(ckpt_path) == True
             checkpoint_dict = torch.load(ckpt_path, map_location=self.device)
             self.model.load_state_dict(checkpoint_dict['model'])
-            print("successfully reload {} to infer".format(ckpt_path))
+            print("successfully reload {} [model] to infer".format(ckpt_path))
 
         self.model.to(self.device)
         self.model.eval()
@@ -273,7 +281,7 @@ class trainer(object):
         args = self.args
         self.epoch_idx = 0
         if not os.path.exists(args.ckpt_dir):
-            os.mkdir(args.ckpt_dir)
+            os.makedirs(args.ckpt_dir)
             print("can not find ckpt dir, and creat {} dir".format(args.ckpt_dir))
             print("start to train fron epoch 0...")
         else:
@@ -292,6 +300,7 @@ class trainer(object):
                 checkpoint_dict = torch.load(
                     '{}/ckpt_epoch{}.pt'.format(args.ckpt_dir, self.epoch_idx), map_location=self.device)
                 self.optimizer.load_state_dict(checkpoint_dict['optimizer'])
+                print("sucessfully reload mdl_epoch{}.pt [optimizer]".format(self.epoch_idx))
 
                 # NOTE: this maybe a bug in pytorch
                 for state in self.optimizer.state.values():
@@ -300,9 +309,12 @@ class trainer(object):
                             state[k] = v.cuda()
 
                 self.model.load_state_dict(checkpoint_dict['model'])
-                self.class_mean = checkpoint_dict['class_mean']
+                print("sucessfully reload mdl_epoch{}.pt [model]".format(self.epoch_idx))
 
-                print("sucessfully reload mdl_epoch{}.pt".format(self.epoch_idx))
+                self.class_mean = checkpoint_dict['class_mean']
+                print("sucessfully reload mdl_epoch{}.pt [class_mean]".format(self.epoch_idx))
+
+                print("sucessfully reload mdl_epoch{}.pt all".format(self.epoch_idx))
                 self.epoch_idx += 1
                 self.contain = None
             else:
@@ -312,7 +324,7 @@ class trainer(object):
         '''save the checkpoint, including model and optimizer, and model index is epoch'''
         args = self.args
         if not os.path.exists(args.ckpt_dir):
-            os.mkdir(args.ckpt_dir)
+            os.makedirs(args.ckpt_dir)
             print("can not find ckpt dir, and creat {} dir".format(args.ckpt_dir))
 
         PATH = '{}/ckpt_epoch{}.pt'.format(args.ckpt_dir, self.epoch_idx)
