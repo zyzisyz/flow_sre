@@ -16,7 +16,7 @@
 flow=maf
 train_data_npz=./data/feats.npz
 test_data_npz=./data/feats.npz
-epochs=10
+epochs=20
 batch_size=20000 
 num_blocks=10 
 num_hidden=256 
@@ -27,7 +27,7 @@ c_dim=36
 u_0=1.0
 u_shift=0.75
 ckpt_dir=ckpt/${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
-ckpt_save_interval=2
+ckpt_save_interval=1
 device=0
 kaldi_dir=kaldi_data/${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
 log_dir=log_data/${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
@@ -80,7 +80,7 @@ done >&6
 for ((infer_epoch=0;infer_epoch<${epochs};infer_epoch=infer_epoch+ckpt_save_interval))
 do
 	{
-		nohup python -u main.py \
+		python -u main.py \
 			--eval \
 			--test_data_npz $test_data_npz \
 			--flow $flow \
@@ -90,9 +90,8 @@ do
 			--device $device \
 			--ckpt_dir $ckpt_dir \
 			--kaldi_dir $kaldi_dir \
-		> $log_dir/infer_log_${infer_epoch}.log
 
-		echo "" >&6
+			echo "" >&6
 	} & 
 done 
 
