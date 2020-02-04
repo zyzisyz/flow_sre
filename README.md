@@ -44,9 +44,9 @@ What's more, `ark2npz.py` also convert the string label to int label, and the la
 
 `class_mean` will be initialized or updated at the begining of each training epoch.
 
-**epoch 0**: will initialize `class_mean` from x space (orignal dataset)
+**epoch_0**: initialize `class_mean` from x space (orignal dataset)
 
-**epoch n**: (n>0) will update `class_meean` from n-1 epoch's `class_mean` and this epoch z space `class_mean`
+**epoch_n**: (n>0) update `class_meean` from epoch_n-1 's `class_mean` and epoch_n z space `class_mean`, `args.u_shift` determine the `class_mean` update shift weight.
 
 ```python
 self.class_mean = class_mean.to(self.device)*args.u_shift + self.class_mean*(1.0-args.u_shift)
