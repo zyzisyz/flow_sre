@@ -8,7 +8,7 @@
 
 ## Data Preparation
 
-`tools/ark2npz.py` convert kaldi `feats.ark` to numpy `feats.npz` (`utt2spk` file is also required)
+`tools/ark2npz.py` transfers kaldi `feats.ark` to numpy `feats.npz` (`utt2spk` file is also required)
 
 ```bash
 # convert ark to npz
@@ -18,7 +18,7 @@ python -u tools/ark2npz.py \
     --utt2spk data/utt2spk
 ```
 
-When we finish data preparation, we can get a `feats.npz` file, which contain audio Mel-features and its labels
+When we finish data preparation process, we can get a `feats.npz` file, which contain audio Mel-features and its labels
 
 Each frame has 72 dimension vector and two labels: `spker_label` and `utt_label`.
 
