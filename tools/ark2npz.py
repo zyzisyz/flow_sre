@@ -34,8 +34,9 @@ def ark2npz(ark_path, npz_path, utt2spk):
     data : feats.shape=(utt_num, 72)
 
     //load the data and label
-    feats = np.load(npz_path, allow_pickle=True)['feats']
-    spkers = np.load(npz_path, allow_pickle=True)['spkers']
+    feats = np.load(args.dest_file, allow_pickle=True)['feats']
+    spker_label = np.load(args.dest_file, allow_pickle=True)['spker_label']
+    utt_label = np.load(args.dest_file, allow_pickle=True)['utt_label']
 
     '''
     print("ark data loading...")

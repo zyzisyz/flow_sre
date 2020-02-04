@@ -10,13 +10,13 @@
 #./data_preparation.sh
 
 ##################################################################
-# stage0: Parameter Config
+# stage0: Model Parameter Config
 ##################################################################
 
 flow=maf
 train_data_npz=./data/feats.npz
 test_data_npz=./data/feats.npz
-epochs=20
+epochs=1
 batch_size=20000 
 num_blocks=10 
 num_hidden=256 
@@ -26,14 +26,14 @@ v_0=1.0
 c_dim=36 
 u_0=1.0
 u_shift=0.75
-ckpt_dir=ckpt/${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
+model_name=${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
+ckpt_dir=ckpt/${model_name}
 ckpt_save_interval=1
 device=0
-kaldi_dir=kaldi_data/${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
-log_dir=log_data/${flow}_block_${num_blocks}_hidden_${num_hidden}_cd_${c_dim}_vc_${v_c}_v0_${v_0}_u0_${u_0}
+infer_data_dir=infered_data/${model_name}
+log_dir=log_data/${model_name}
 
-infer_thread_num=3
-
+infer_job_num=6
 
 ##################################################################
 # stage1: pytorch training 
@@ -58,10 +58,29 @@ python -u main.py \
 	   --ckpt_save_interval $ckpt_save_interval
 
 ##################################################################
-# stage3: infer data from x space to z space and save to kaldi ark
+# stage3: infer data from x space to z space and save to numpy npz
 ##################################################################
 
-echo "start to infer data from x space to z space and store to kaldi"
+echo "start to infer data from x space to z space and store to numpy npz"
+for ((infer_epoch=0;infer_epoch<${epochs};infer_epoch=infer_epoch+ckpt_save_interval))
+do
+	np_dir=$infer_data_dir/$infer_epoch
+	python -u main.py \
+		--eval \
+		--test_data_npz $test_data_npz \
+		--flow $flow \
+		--num_blocks $num_blocks \
+		--num_hidden $num_hidden \
+		--infer_epoch $infer_epoch \
+		--device $device \
+		--ckpt_dir $ckpt_dir \
+		--np_dir $np_dir 
+done
+
+##################################################################
+# stage4: parallel transfer numpy npz to kaldi ark
+##################################################################
+
 
 tempfifo="temp_fifo"
 mkfifo ${tempfifo}
@@ -69,7 +88,7 @@ mkfifo ${tempfifo}
 exec 6<>${tempfifo}
 rm -f ${tempfifo}
 
-for ((i=1;i<=${thread_num};i++))
+for ((i=1;i<=${infer_job_num};i++))
 do
 {
     echo 
@@ -79,19 +98,16 @@ done >&6
 
 for ((infer_epoch=0;infer_epoch<${epochs};infer_epoch=infer_epoch+ckpt_save_interval))
 do
+	read -u6
 	{
-		python -u main.py \
-			--eval \
-			--test_data_npz $test_data_npz \
-			--flow $flow \
-			--num_blocks $num_blocks \
-			--num_hidden $num_hidden \
-			--infer_epoch $infer_epoch \
-			--device $device \
-			--ckpt_dir $ckpt_dir \
-			--kaldi_dir $kaldi_dir \
+		np_file=$infer_data_dir/$infer_epoch/feats.npz
+		ark_dir=$infer_data_dir/$infer_epoch
 
-			echo "" >&6
+		python -u tools/npz2ark.py \
+			--src_file $np_file \
+			--dest_dir $ark_dir
+
+		echo "" >&6
 	} & 
 done 
 

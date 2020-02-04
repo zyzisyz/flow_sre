@@ -19,7 +19,7 @@ if __name__ == "__main__":
     if not args.eval:
         flow_trainer.train()
     else:
-        if not args.np:
-            flow_trainer.generate_z_kaldi()
-        else:
+        if not args.ark:
             flow_trainer.generate_z_np()
+        else:
+            flow_trainer.generate_z_kaidl()

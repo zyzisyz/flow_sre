@@ -11,9 +11,9 @@
 import numpy as np
 import torch
 
-def vector_combination(u_j, u_0):
-    return torch.cat((u_j, u_0))
 
+def mat_1d_combination(u_j, u_0):
+    return torch.cat((u_j, u_0))
 
 def square_mat_diag_combination(var_j, var_0):
     """
@@ -73,5 +73,5 @@ if __name__ == "__main__":
 
     print(var_j)
     print(var_0)
-    print(mat_diag_combination(var_j, var_0))
+    print(square_mat_diag_combination(var_j, var_0))
 

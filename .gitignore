@@ -4,6 +4,8 @@ data
 *tsv
 dev.py
 kaldi_data
+infered_data
+*.ark
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

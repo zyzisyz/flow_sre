@@ -50,7 +50,7 @@ def get_args():
             help='disables CUDA training')
 
     parser.add_argument(
-            '--np',
+            '--ark',
             action='store_true',
             default=False,
             help='infer kaldi or numpy data')
@@ -75,9 +75,9 @@ def get_args():
             help='log status')
 
     parser.add_argument(
-            '--kaldi_dir',
-            default='infer_kaldi_data',
-            help='kaldi ark data')
+            '--ark_dir',
+            default='infer_ark_data',
+            help='kaldi ark data dir')
 
     parser.add_argument(
             '--train_data_npz',
@@ -90,9 +90,9 @@ def get_args():
             help='dataset name')
 
     parser.add_argument(
-            '--infer_data_store_path',
-            default='./infer.npz',
-            help='infer data npz path')
+            '--np_dir',
+            default='./np_data',
+            help='infer data npz dir')
 
     parser.add_argument(
             '--test_data_npz',

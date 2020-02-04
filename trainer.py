@@ -17,6 +17,7 @@ from utils import *
 import torch.nn.functional as F
 import kaldi_io
 from tqdm import tqdm
+from tensorboardX import SummaryWriter
 
 pi = torch.from_numpy(np.array(np.pi))
 
@@ -184,7 +185,7 @@ class trainer(object):
             raise Exception("contain error")
             
 
-    def generate_z_kaldi(self):
+    def generate_z_ark(self):
         args = self.args
 
         c_dim = self.args.c_dim
@@ -207,10 +208,10 @@ class trainer(object):
             npz_path=self.args.test_data_npz, dataset_name=self.args.dataset_name)
         utt_data = dataset.get_utt_data()
 
-        kaldi_dir = args.kaldi_dir + os.sep + str(args.infer_epoch)
-        if not os.path.exists(kaldi_dir):
-            os.makedirs(kaldi_dir)
-        ark_path = args.kaldi_dir + os.sep + str(args.infer_epoch) + os.sep + 'feats.ark'
+        ark_dir = args.ark_dir
+        if not os.path.exists(ark_dir):
+            os.makedirs(ark_dir)
+        ark_path = args.ark_dir + os.sep + 'feats.ark'
 
         pbar = tqdm(total=len(utt_data))
         with open(ark_path,'wb') as f:
@@ -257,7 +258,7 @@ class trainer(object):
         test_loader = torch.utils.data.DataLoader(
             dataset, batch_size=25000, shuffle=False, **kwargs)
 
-        total = len(dataset.label)
+        pbar = tqdm()
         for batch_idx, (data, label) in enumerate(test_loader):  # batchs
             data = data.to(self.device)
             z, _ = self.model(data)
@@ -266,15 +267,21 @@ class trainer(object):
                 feats = z
             else:
                 feats = np.vstack((feats, z))
+            shape = np.shape(feats)
+            pbar.set_description('feats.npz generateing: {:.2f}%\t{}'.format(shape[0]/len(dataset.label)*100, shape))
 
-            print(batch_idx, " generating: {:.2f}% \t[{}/{}]\tfeats shape: {}".format(
-                (batch_idx+1)*len(label)/total*100, (batch_idx+1)*len(label), total, np.shape(feats)))
+        pbar.close()
 
         feats = feats[:, :c_dim]
         print(np.shape(feats))
+        print("saving...")
 
-        np.savez(args.infer_data_store_path, feats=feats, spker_label=dataset.spker_label, utt_label=dataset.utt_label)
-        print("sucessfully saved in {}".format(args.infer_data_store_path))
+        np_dir = args.np_dir
+        if not os.path.exists(np_dir):
+            os.makedirs(np_dir)
+        npz_path = np_dir + os.sep + 'feats.npz'
+        np.savez(npz_path, feats=feats, spker_label=dataset.spker_label, utt_label=dataset.utt_label)
+        print("sucessfully saved in {}".format(npz_path))
 
     def reload_checkpoint(self):
         '''check if checkpoint file exists and reload the checkpoint'''

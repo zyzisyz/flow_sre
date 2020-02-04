@@ -92,14 +92,6 @@ def get_class_mean(data, label):
     return class_mean
 
 
-def get_all_mean(data, label):
-    '''compute the all mean and var'''
-    all_mean = np.ones((len(np.unique(label)), np.shape(data)[1]), dtype=float)
-    all_mean_1d = data.mean(axis=0)
-    all_mean = all_mean*all_mean_1d
-
-    return all_mean
-
 
 if __name__ == "__main__":
     # test
