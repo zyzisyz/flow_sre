@@ -125,7 +125,7 @@ class trainer(object):
             print('====> Epoch: {} Average loss: {:.4f}'.format(
                 self.epoch_idx, train_loss/len(self.dataset.label)*self.args.batch_size))
             
-            # updata class mean afer epoch training
+            # update class mean afer epoch training
             self.update_class_mean()
 
             if self.epoch_idx % args.ckpt_save_interval == 0:
@@ -157,9 +157,9 @@ class trainer(object):
     def update_class_mean(self):
         args = self.args
         DATA_DIM = len(self.dataset.data[0])
-        # updata class mean from z space at the start of epoch x > 0 (contain)
+        # update class mean from z space at the start of epoch x > 0 (contain)
         if self.contain != None:
-            print('updata class_mean from z space and args.u_shift is {}'.format(args.u_shift))
+            print('update class_mean from z space and args.u_shift is {}'.format(args.u_shift))
             class_dataset = []
             for it in self.contain:
                 class_dataset.append(np.array(it))

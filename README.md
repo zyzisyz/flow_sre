@@ -16,14 +16,17 @@ python -u tools/ark2npz.py \
     --src_file data/feats.ark \
     --dest_file data/feats.npz \
     --utt2spk data/utt2spk
-
 ```
 
-When we finish data preparation, we can get a `feats.npz` file, which contain audio Mel-features and labels(speakers)
+When we finish data preparation, we can get a `feats.npz` file, which contain audio Mel-features and its labels
+
+Each frame has 72 dimension vector and two labels: `spker_label` and `utt_label`.
+
+`spker_label` is for pytorch `HDA_Gaussion_log_likehood` training and `utt_label` is for kaldi ark data infering
 
 What's more, `ark2npz.py` also convert the string label to int label, and the label of the first speaker is 0.
 
-```
+```bash
 .
 ├── feats.ark
 ├── feats.scp
@@ -32,17 +35,28 @@ What's more, `ark2npz.py` also convert the string label to int label, and the la
 ├── utt2spk
 └── feats.npz (new file)
 ```
+
 `data_loader.py` will load the `feats.npz` while pytorch training
 
 ## Train a model and infer data from x space to z space
 
-### Train-scheme and Loss function
+### Train-scheme
 
-`class_mean` and `all_mean` will be updata at the begining of each training epoch.
+`class_mean` will be initialized or updated at the begining of each training epoch.
 
-`var_j` and `var_0` are fixed
+**epoch 0**: will initialize `class_mean` from x space (orignal dataset)
 
-Loss: Gaussion Log-likehood (HDA, `class_meean` and `all_mean` matrix are recombination ordered by `c_dim`)
+**epoch n**: (n>0) will update `class_meean` from n-1 epoch's `class_mean` and this epoch z space `class_mean`
+
+```python
+self.class_mean = class_mean.to(self.device)*args.u_shift + self.class_mean*(1.0-args.u_shift)
+```
+
+`var_j` `var_0` `u_0` are fixed
+
+### Loss function
+
+Loss: HDA Gaussion Log-likehood (HDA, `class_meean` and `all_mean` matrix are recombination ordered by `c_dim`)
 
 ```python
 # convert data from x space to z space
@@ -63,28 +77,11 @@ loss = -(log_probs + logdet).mean()
 ### Run
 
 ```bash
-# train a model
-python -u main.py \
-	   --flow maf \
-	   --epochs 2 \
-	   --batch_size 20000 \
-	   --train_data_npz ./data/feats.npz \
-	   --lr 0.001 \
-	   --num_blocks 10 \
-	   --num_hidden 256 \
-	   --device 0 \
-	   --ckpt_dir ckpt \
-	   --v_c 0.1 \
-	   --v_0 1.0 \
-	   --c_dim 36 \
-	   --ckpt_save_interval 1
+# check and modify shell config
+vim run.sh
 
-# infer data from x space to z space and store infered_data to npz file
-python -u main.py \
-	   --eval \
-	   --infer_epoch 1 \
-	   --test_data_npz ./data/feats.npz \
-	   --kaldi_dir kaldi_data
+# run
+bash run.sh
 ```
 
 ## tools
