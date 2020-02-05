@@ -7,6 +7,7 @@
 #	> Created Time: Sat 01 Feb 2020 08:00:01 PM CST
 # ************************************************************************/
 
+#./data_preparation.sh
 
 ##################################################################
 # stage0: Parameter Config
@@ -35,7 +36,7 @@ infer_thread_num=3
 
 
 ##################################################################
-# stage2: pytorch training 
+# stage1: pytorch training 
 ##################################################################
 
 echo "start to train"
@@ -57,23 +58,10 @@ python -u main.py \
 	   --ckpt_save_interval $ckpt_save_interval
 
 ##################################################################
-# stage2: infer data from x space to z space and save to kaldi ark
+# stage3: infer data from x space to z space and save to kaldi ark
 ##################################################################
 
 echo "start to infer data from x space to z space and store to kaldi"
-for ((infer_epoch=0;infer_epoch<${epochs};infer_epoch=infer_epoch+ckpt_save_interval))
-do
-	python -u main.py \
-		--eval \
-		--test_data_npz $test_data_npz \
-		--flow $flow \
-		--num_blocks $num_blocks \
-		--num_hidden $num_hidden \
-		--infer_epoch $infer_epoch \
-		--device $device \
-		--ckpt_dir $ckpt_dir \
-		--kaldi_dir $kaldi_dir
-done 
 
 tempfifo="temp_fifo"
 mkfifo ${tempfifo}
