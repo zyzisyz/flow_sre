@@ -115,3 +115,14 @@ git clone https://github.com/tensorflow/embedding-projector-standalone.git
 ├ x_data.tsv
 └ z_data.tsv
 ```
+
+### numpy npz & kaldi ark
+
+1. `tools/ark2npz.py` transfers kaldi `feats.ark` to numpy `feats.npz` (`utt2spk` file is also required)
+2. `tools/npz2ark.py` transfers numpy `feats.npz` to numpy `feats.ark` 
+
+### Tensorboard
+
+```bash
+tensorboard --logdir runs/*
+```

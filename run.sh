@@ -16,10 +16,10 @@
 flow=maf
 train_data_npz=./data/feats.npz
 test_data_npz=./data/feats.npz
-epochs=1
+epochs=11
 batch_size=20000 
 num_blocks=10 
-num_hidden=256 
+num_hidden=512
 lr=0.001
 v_c=0.1
 v_0=1.0
@@ -33,7 +33,7 @@ device=0
 infer_data_dir=infered_data/${model_name}
 log_dir=log_data/${model_name}
 
-infer_job_num=6
+infer_job_num=4
 
 ##################################################################
 # stage1: pytorch training 
@@ -46,6 +46,7 @@ python -u main.py \
 	   --batch_size $batch_size \
 	   --train_data_npz $train_data_npz \
 	   --lr $lr \
+	   --model_name $model_name \
 	   --num_blocks $num_blocks \
 	   --num_hidden $num_hidden \
 	   --device $device \
@@ -56,6 +57,9 @@ python -u main.py \
 	   --c_dim $c_dim \
 	   --ckpt_dir $ckpt_dir \
 	   --ckpt_save_interval $ckpt_save_interval
+
+
+# tensorboard --logdir runs/*
 
 ##################################################################
 # stage3: infer data from x space to z space and save to numpy npz

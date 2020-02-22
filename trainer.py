@@ -41,6 +41,11 @@ class trainer(object):
             self.device = torch.device("cpu")
         print("torch device: {}".format(self.device))
 
+        # tensorboardX
+        self.writer = SummaryWriter(comment=args.model_name)
+        self.global_step = 0
+
+
     def train(self):
         args = self.args
 
@@ -78,10 +83,12 @@ class trainer(object):
             print("training is down!")
             return
 
+
         for idx in range(start_epoch, args.epochs):  # epochs
             self.epoch_idx = idx
             train_loss = 0
-            
+            train_avg_loss = AverageMeter()
+
             # init class mean from x space
             if idx == 0:
                 self.init_class_mean()
@@ -91,6 +98,7 @@ class trainer(object):
             for i in range(self.class_mean.shape[0]):
                 self.contain.append([])
 
+            pbar = tqdm(total=len(self.train_loader.dataset))
             for batch_idx, (data, label) in enumerate(self.train_loader):  # batchs
 
                 data = data.to(self.device)
@@ -99,9 +107,8 @@ class trainer(object):
                 self.optimizer.zero_grad()
 
                 mean_j = torch.index_select(self.class_mean, 0, label).to(self.device)
-                # convert data from x space to z space
 
-                '''NOTE: if you want to change loss function, z must be returned to update class mean'''
+                '''NOTE: if you want to change loss function, z must be returned to update contain and class mean'''
                 # compute hda Gaussion log-likehood
                 loss, z = self.model.HDA_Gaussion_log_likehood(data, mean_j, var_global)
                 
@@ -110,22 +117,42 @@ class trainer(object):
 
                 cur_loss = loss.item()
 
+                # loss logging
+                self.writer.add_scalar('LogLL', loss.item(), self.global_step)
+                self.global_step += 1
                 train_loss += cur_loss
-                self.optimizer.step()
+                train_avg_loss.update(loss.item(), data.size(0))
 
+                
+
+                self.optimizer.step()
+                # update contain
                 z = z.cpu().detach().numpy()
                 for i in range(len(label)):
                     self.contain[label[i]].append(z[i])
 
-                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    self.epoch_idx, batch_idx *
-                    len(data), len(self.train_loader.dataset),
-                    100.*batch_idx / len(self.train_loader),
-                    cur_loss))
+                pbar.update(data.size(0))
+                pbar.set_description('[Epoch: {}] HDA Gaussion log-likehood = {:.6f}'.format(idx, train_avg_loss.val))
 
-            print('====> Epoch: {} Average loss: {:.4f}'.format(
-                self.epoch_idx, train_loss/len(self.dataset.label)*self.args.batch_size))
-            
+
+            pbar.close()
+            print('====> Epoch: {} Average loss: {:.6f}'.format(idx, train_avg_loss.avg))
+
+            print("Batch Norm...")
+            for module in self.model.modules():
+                if isinstance(module, fnn.BatchNormFlow):
+                    module.momentum = 0
+
+            # this step need allocate lots of memory...
+            print("this step need allocate lots of memory...")
+            with torch.no_grad():
+                tmp = torch.from_numpy(self.dataset.data[:10000, ]).to(self.device)
+                self.model(tmp)
+
+            for module in self.model.modules():
+                if isinstance(module, fnn.BatchNormFlow):
+                    module.momentum = 1
+
             # update class mean afer epoch training
             self.update_class_mean()
 
@@ -139,9 +166,15 @@ class trainer(object):
     def init_class_mean(self):
         args = self.args
 
+        DATA_DIM = len(self.dataset.data[0])
         # init class mean from x space at the start of epoch 0
-        print('epoch 0: init class_mean from x space')
-        class_mean = get_class_mean(self.dataset.data, self.dataset.label)
+        label_num = len(np.unique(self.dataset.label))
+
+        print('epoch 0: init class_mean by sampling from N~(0, {})'.format(args.v_c))
+
+        mean = np.zeros(DATA_DIM)
+        conv = np.identity(DATA_DIM) * args.v_c
+        class_mean = np.random.multivariate_normal(mean=mean, cov=conv, size=label_num)
         class_mean = torch.from_numpy(class_mean)
 
         # split data

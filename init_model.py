@@ -18,6 +18,12 @@ import torch.nn.functional as F
 
 
 def init_model(args, num_inputs=72):
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    if args.cuda:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+        device = torch.device("cuda:" + args.device)
+    else:
+        device = torch.device("cpu")
     # network structure
     num_hidden = args.num_hidden
     num_cond_inputs = None

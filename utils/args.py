@@ -85,6 +85,11 @@ def get_args():
             help='train data npz path')
 
     parser.add_argument(
+            '--model_name',
+            default='flow',
+            help='model_name')
+
+    parser.add_argument(
             '--dataset_name',
             default='voxceleb1',
             help='dataset name')

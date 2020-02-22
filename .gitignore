@@ -1,10 +1,12 @@
 data/
+dev_*
 ckpt/
 data
 *tsv
 dev.py
 kaldi_data
 infered_data
+runs/
 *.ark
 
 # Byte-compiled / optimized / DLL files
