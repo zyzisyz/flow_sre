@@ -170,10 +170,10 @@ class trainer(object):
         # init class mean from x space at the start of epoch 0
         label_num = len(np.unique(self.dataset.label))
 
-        print('epoch 0: init class_mean by sampling from N~(0, {})'.format(args.v_c))
+        print('epoch 0: init class_mean by sampling from N~(0, {})'.format(args.v_0))
 
         mean = np.zeros(DATA_DIM)
-        conv = np.identity(DATA_DIM) * args.v_c
+        conv = np.identity(DATA_DIM) * args.v_0
         class_mean = np.random.multivariate_normal(mean=mean, cov=conv, size=label_num)
         class_mean = torch.from_numpy(class_mean)
 
